@@ -1,5 +1,74 @@
 import "./style.css";
 
+const input = {
+  state: {
+    moveLeft: false,
+    moveRight: false,
+    moveUp: false,
+    moveDown: false,
+  },
+  actionMap: {
+    moveLeft: ["a", "ArrowLeft"],
+    moveRight: ["d", "ArrowRight"],
+    moveUp: ["w", "ArrowUp"],
+    moveDown: ["s", "ArrowDown"],
+  },
+};
+
+type InputActionMapType = typeof input.actionMap;
+type InputActionNameType = keyof InputActionMapType;
+type InputActionsType = { [P in keyof InputActionMapType]: string };
+
+const InputActions: InputActionsType = Object.keys(input.actionMap).reduce(
+  (actions, inputActionName) => {
+    return { ...actions, [inputActionName]: inputActionName };
+  },
+  {} as InputActionsType
+);
+
+const getInputActionKeyBindings = (inputActionName: string): string[] => {
+  const inputActionKeyBindings: string[] =
+    input.actionMap[inputActionName as InputActionNameType];
+  return inputActionKeyBindings;
+};
+
+const setInputStateForAction = (
+  inputActionName: string,
+  nextState: boolean
+) => {
+  input.state[inputActionName as InputActionNameType] = nextState;
+};
+
+const isInputActionPressed = (inputActionName: string): boolean => {
+  return input.state[inputActionName as keyof typeof input.state];
+};
+
+const handleKeyEvent = (keyEvent: KeyboardEvent, isDown: boolean) => {
+  const inputActionNames: string[] = Object.keys(input.actionMap);
+  for (const inputActionName of inputActionNames) {
+    const inputActionKeyBindings: string[] =
+      getInputActionKeyBindings(inputActionName);
+    if (inputActionKeyBindings.includes(keyEvent.key)) {
+      keyEvent.preventDefault();
+      setInputStateForAction(inputActionName, isDown);
+      break;
+    }
+  }
+};
+
+const handleKeyDownEvent = (keyEvent: KeyboardEvent) => {
+  handleKeyEvent(keyEvent, true);
+};
+
+const handleKeyUpEvent = (keyEvent: KeyboardEvent) => {
+  handleKeyEvent(keyEvent, false);
+};
+
+const setupInputEventHandlers = () => {
+  window.addEventListener("keydown", handleKeyDownEvent, false);
+  window.addEventListener("keyup", handleKeyUpEvent, false);
+};
+
 const canvas = document.createElement("canvas");
 
 canvas.width = 640;
@@ -39,64 +108,6 @@ function normalized({ x, y }: { x: number; y: number }): {
   return normalizedVector;
 }
 
-const input = {
-  up: false,
-  down: false,
-  left: false,
-  right: false,
-};
-
-function setupInputEventHandlers() {
-  const validKeys = [
-    "UpArrow",
-    "DownArrow",
-    "LeftArrow",
-    "RightArrow",
-    "w",
-    "s",
-    "a",
-    "d",
-  ];
-  window.addEventListener(
-    "keydown",
-    (keyEvent: KeyboardEvent) => {
-      console.log(keyEvent.key);
-      if (validKeys.includes(keyEvent.key)) {
-        keyEvent.preventDefault();
-        if (keyEvent.key === "UpArrow") {
-          input.up = true;
-        } else if (keyEvent.key === "DownArrow") {
-          input.down = true;
-        } else if (keyEvent.key === "LeftArrow") {
-          input.left = true;
-        } else if (keyEvent.key === "RightArrow") {
-          input.right = true;
-        }
-      }
-    },
-    false
-  );
-
-  window.addEventListener(
-    "keyup",
-    (keyEvent: KeyboardEvent) => {
-      if (validKeys.includes(keyEvent.key)) {
-        keyEvent.preventDefault();
-        if (keyEvent.key === "UpArrow") {
-          input.up = false;
-        } else if (keyEvent.key === "DownArrow") {
-          input.down = false;
-        } else if (keyEvent.key === "LeftArrow") {
-          input.left = false;
-        } else if (keyEvent.key === "RightArrow") {
-          input.right = false;
-        }
-      }
-    },
-    false
-  );
-}
-
 const mainLoop = () => {
   const currTime = Date.now();
   state.deltaTime = (currTime - state.lastTime) * 0.001;
@@ -105,15 +116,15 @@ const mainLoop = () => {
   box.vx = 0;
   box.vy = 0;
 
-  if (input.up) {
+  if (isInputActionPressed(InputActions.moveUp)) {
     box.vy = -1;
-  } else if (input.down) {
+  } else if (isInputActionPressed(InputActions.moveDown)) {
     box.vy = 1;
   }
 
-  if (input.left) {
+  if (isInputActionPressed(InputActions.moveLeft)) {
     box.vx = -1;
-  } else if (input.right) {
+  } else if (isInputActionPressed(InputActions.moveRight)) {
     box.vx = 1;
   }
 
